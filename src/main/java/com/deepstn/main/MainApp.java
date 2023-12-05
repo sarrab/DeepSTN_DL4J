@@ -39,7 +39,8 @@ public class MainApp {
         DataManager dataManager = new DataManager(datasetPath);
         Object[] processedData = dataManager.processData(lenTest, lenCloseness, lenPeriod, lenTrend, T_closeness, T_period, T_trend);
         DSTNPlusTrainer trainer = new DSTNPlusTrainer(processedData, config);
-        trainer.train(processedData, config);
+        trainer.train();
+        trainer.train();
 
 
     }

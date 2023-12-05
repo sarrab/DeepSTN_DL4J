@@ -30,7 +30,7 @@ public class DSTNPlusTrainer {
 
     }
 
-    public void train(Object[] allData, Properties config) {
+    public void train() {
 
         int iterateNum = Integer.parseInt(config.getProperty("iterateNum"));
         int batchSize = Integer.parseInt(config.getProperty("batchSize"));
@@ -73,7 +73,7 @@ public class DSTNPlusTrainer {
         int PT_F = 0;
         int T = 0;
         int kernel_size_early_fusion = 1;
-        System.out.println("************ conv model ************");
+        log.info("**************************** conv model *******************************");
         ComputationGraph model = new DeepSTN().buildModel(height, width, channel, lenCloseness, lenPeriod, lenTrend, pre_F, conv_F, residualUnits, is_plus, is_plus_efficient,
                 plusFilters, pooling_rate, is_pt, P_N, T_F, PT_F, T, drop, lr, kernel_size_early_fusion, isPT_F, seed);
 
