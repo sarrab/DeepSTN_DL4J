@@ -29,5 +29,5 @@ public class ConfigReader {
         return properties;
     }
 
-    // ... You can add more getters for other data types as needed
+
 }
