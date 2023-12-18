@@ -38,7 +38,7 @@ public class DataManager {
     }
 
     public static INDArray loadData(String datasetPath) {
-        log.info("****************** Loading data from " + datasetPath + "**********************");
+        log.info("****************** Loading data **********************");
         return Nd4j.readNpy(datasetPath);
 
     }

@@ -1,12 +1,8 @@
 package com.deepstn.training;
 
 import com.deepstn.model.DeepSTN;
-import org.deeplearning4j.core.storage.StatsStorage;
 import org.deeplearning4j.datasets.iterator.utilty.ListDataSetIterator;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.ui.api.UIServer;
-import org.deeplearning4j.ui.model.stats.StatsListener;
-import org.deeplearning4j.ui.model.storage.InMemoryStatsStorage;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -81,15 +77,12 @@ public class DSTNPlusTrainer {
         DataSet dataSet = new DataSet(xTrain, yTrain);
         DataSetIterator dataSetIterator = new ListDataSetIterator<>(dataSet.asList(), batchSize);
 
-        UIServer uiServer = UIServer.getInstance();
-        StatsStorage statsStorage = new InMemoryStatsStorage();
-        uiServer.attach(statsStorage);
+
 
         long startTime = System.currentTimeMillis();
 
 
-        model.setListeners(new StatsListener(statsStorage));
-
+        log.info("************************ Training  ************************");
         model.fit(dataSetIterator, epochs);
         RegressionEvaluation eval = new RegressionEvaluation();
 

@@ -20,7 +20,7 @@ public class MainApp {
     public static void main(String[] args) {
 
         try {
-            configReader = new ConfigReader("src/main/resources/config.properties");
+            configReader = new ConfigReader("config.properties");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -39,7 +39,6 @@ public class MainApp {
         DataManager dataManager = new DataManager(datasetPath);
         Object[] processedData = dataManager.processData(lenTest, lenCloseness, lenPeriod, lenTrend, T_closeness, T_period, T_trend);
         DSTNPlusTrainer trainer = new DSTNPlusTrainer(processedData, config);
-        trainer.train();
         trainer.train();
 
 
