@@ -77,7 +77,7 @@ public class DeepSTN {
 
 
     public ComputationGraph buildModel(int H, int W, int channel, int c, int p, int t,
-                                       int pre_F, int conv_F, int R_N, boolean is_plus, boolean is_plus_efficient,
+                                       int pre_F, int conv_F, int R_N,
                                        int plus, int rate, boolean is_pt, int P_N, int T_F, int PT_F, int T,
                                        double drop, double lr, int kernel_size_early_fusion, boolean isPT_F, long seed) {
         int all_channel = channel * (c + p + t);
@@ -113,19 +113,11 @@ public class DeepSTN {
 
         String lastLayer = convUnit(graphBuilder, "concat_c_p_t", "_eFusion_main", kernel_size_early_fusion, pre_F * 3, conv_F, drop);
 
-        if (is_plus) {
-            if (is_plus_efficient) {
-                //TODO;
-            } else {
-                for (int i = 0; i < R_N; i++) {
-                    System.out.println(" before residual block " + (i + 1) + " , lastLayer: " + lastLayer);
+        for (int i = 0; i < R_N; i++) {
+            System.out.println(" before residual block " + (i + 1) + " , lastLayer: " + lastLayer);
 
-                    lastLayer = createResPlusEModel(graphBuilder, lastLayer, i + 1, conv_F, plus, rate, drop, H, W, seed);
+            lastLayer = createResPlusEModel(graphBuilder, lastLayer, i + 1, conv_F, plus, rate, drop, H, W, seed);
 
-                }
-            }
-        } else {
-            //TODO;
         }
 
 

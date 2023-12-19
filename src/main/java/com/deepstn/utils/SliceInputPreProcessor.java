@@ -26,7 +26,7 @@ public class SliceInputPreProcessor extends BaseInputPreProcessor {
 
 
     public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
-        // Slicing along the channel dimension (depth)
+        // Slicing along the channel dimension
         return workspaceMgr.dup(ArrayType.ACTIVATIONS, input.get(NDArrayIndex.all(), NDArrayIndex.interval(startSlice, endSlice), NDArrayIndex.all(), NDArrayIndex.all()));
     }
 

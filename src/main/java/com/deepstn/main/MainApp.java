@@ -20,7 +20,7 @@ public class MainApp {
     public static void main(String[] args) {
 
         try {
-            configReader = new ConfigReader("config.properties");
+            configReader = new ConfigReader("src/main/resources/config.properties");
         } catch (IOException e) {
             e.printStackTrace();
         }

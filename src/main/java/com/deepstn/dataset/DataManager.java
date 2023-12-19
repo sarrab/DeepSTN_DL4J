@@ -48,6 +48,9 @@ public class DataManager {
         log.info("****************** Normalizing data **********************");
         log.info("maxVal " + maxVal);
         log.info("minVal " + minVal);
+        if (!allData.dataType().equals(DataType.DOUBLE)) {
+            allData = allData.castTo(DataType.DOUBLE);
+        }
         return allData.mul(2.0).sub((maxVal + minVal)).div((maxVal - minVal));
 
     }
