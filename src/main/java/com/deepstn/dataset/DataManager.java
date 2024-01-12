@@ -5,6 +5,7 @@ import com.deepstn.utils.INDArraySlicer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +25,19 @@ public class DataManager {
     private final long mapWidth;
     private INDArray poi;
 
+
+    public DataManager(String datasetPath, String poiPath) {
+        this.allData = loadData(datasetPath);
+        this.poi = loadData(poiPath);
+
+        this.lenTotal = allData.size(0);
+        this.features = allData.size(1);
+        this.mapHeight = allData.size(2);
+        this.mapWidth = allData.size(3);
+        this.maxVal = allData.maxNumber().doubleValue();
+        this.minVal = allData.minNumber().doubleValue();
+
+    }
 
     public DataManager(String datasetPath) {
         this.allData = loadData(datasetPath);
@@ -61,7 +75,7 @@ public class DataManager {
         INDArray timeDay = time.div(T_period).castTo(DataType.INT64).fmod(7);
 
         INDArray matrixHour = Nd4j.zeros(lenTotal, 24, mapHeight, mapWidth);
-        INDArray matrixDay = Nd4j.zeros(lenTotal, 7, allData.size(2), allData.size(3));
+        INDArray matrixDay = Nd4j.zeros(lenTotal, 7, mapHeight, mapWidth);
 
         for (int i = 0; i < lenTotal; i++) {
 
@@ -108,20 +122,33 @@ public class DataManager {
         return tFeatureData;
     }
 
+    public INDArray[] preparePOIData(long lenTrain, long lenTest) {
+        // Normalize the POI data
+        for (int i = 0; i < poi.shape()[0]; i++) {
+            INDArray slice = poi.get(NDArrayIndex.point(i));
+            double maxVal = slice.maxNumber().doubleValue();
+            poi.putSlice(i, slice.div(maxVal));
+        }
+
+        // Reshape POI data
+        INDArray reshapedPOI = poi.reshape(1, poi.shape()[0], mapHeight, mapWidth);
+
+        // Repeat POI data for training and testing
+        INDArray P_train = Nd4j.tile(reshapedPOI, (int) lenTrain, 1, 1, 1);
+        INDArray P_test = Nd4j.tile(reshapedPOI, (int) lenTest, 1, 1, 1);
+
+        return new INDArray[]{P_train, P_test};
+    }
+
     public Object[] processData(int lenTest, int lenCloseness, int lenPeriod, int lenTrend, int TCloseness, int TPeriod, int TTrend) {
 
         allData = normalizeData();
 
-
         int numberOfSkipHours = determineSkipHours(lenCloseness, lenPeriod, lenTrend, TCloseness, TPeriod, TTrend);
 
-
+        //Prepare Label Data
         INDArraySlicer slicer = new INDArraySlicer(allData);
         INDArray y = slicer.extractSubset(numberOfSkipHours, lenTotal);
-
-
-        INDArray matrixT = computeTemporalFeatures(TPeriod);
-        matrixT = matrixT.get(NDArrayIndex.interval(numberOfSkipHours, matrixT.size(0)), NDArrayIndex.all());
 
 
         //Preparation of Closeness data
@@ -137,50 +164,54 @@ public class DataManager {
         if (lenTrend > 0)
             xTrend = prepareTimeFeatureData(lenTrend, TTrend, numberOfSkipHours);
 
-
-        // Splitting Data (train/test):
-
-        // Splitting Closeness Data:
+        // Splitting Closeness Data (train/test):
         INDArray xClosenessTrain = Objects.requireNonNull(xCloseness).get(NDArrayIndex.interval(0, xCloseness.size(0) - lenTest),
                 NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
         INDArray xClosenessTest = Objects.requireNonNull(xCloseness).get(NDArrayIndex.interval(xCloseness.size(0) - lenTest, xCloseness.size(0)),
                 NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
 
-        //Splitting Period Data:
+        //Splitting Period Data (train/test)::
         INDArray xPeriodTrain = Objects.requireNonNull(xPeriod).get(NDArrayIndex.interval(0, xPeriod.size(0) - lenTest),
                 NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
         INDArray xPeriodTest = Objects.requireNonNull(xPeriod).get(NDArrayIndex.interval(xPeriod.size(0) - lenTest, xPeriod.size(0)),
                 NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
 
-        //Splitting Trend Data:
+        //Splitting Trend Data (train/test)::
         INDArray xTrendTrain = Objects.requireNonNull(xTrend).get(NDArrayIndex.interval(0, xTrend.size(0) - lenTest), NDArrayIndex.all(),
                 NDArrayIndex.all(), NDArrayIndex.all());
         INDArray xTrendTest = Objects.requireNonNull(xTrend).get(NDArrayIndex.interval(xTrend.size(0) - lenTest, xTrend.size(0)),
                 NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
 
-
-        // Splitting y Data:
-        long size_yTrain = (y.size(0) - lenTest);
-
-
-        slicer = new INDArraySlicer(y);
-        INDArray yTrain = slicer.extractSubset(0, size_yTrain);
-        INDArray yTest = slicer.extractSubset(size_yTrain, y.size(0));
-
-
-        // Splitting time Data:
-        INDArray timeTrain = matrixT.get(NDArrayIndex.interval(0, matrixT.size(0) - lenTest), NDArrayIndex.all(),
-                NDArrayIndex.all(), NDArrayIndex.all());
-        INDArray timeTest = matrixT.get(NDArrayIndex.interval(matrixT.size(0) - lenTest, matrixT.size(0)), NDArrayIndex.all(),
-                NDArrayIndex.all(), NDArrayIndex.all());
-
-
+        //concatenate xFeaturesData (train and test)
         INDArray xTrain = Nd4j.concat(1, xClosenessTrain, xPeriodTrain, xTrendTrain);
         INDArray xTest = Nd4j.concat(1, xClosenessTest, xPeriodTest, xTrendTest);
 
 
+        // Splitting Label Data:
+        long size_yTrain = (y.size(0) - lenTest);
+        slicer = new INDArraySlicer(y);
+        INDArray yTrain = slicer.extractSubset(0, size_yTrain);
+        INDArray yTest = slicer.extractSubset(size_yTrain, y.size(0));
 
-        return new Object[]{xTrain, timeTrain, yTrain, xTest, timeTest, yTest, maxVal - minVal};
+        if (poi != null && poi.size(0) > 0) {
+            // Preparing and Splitting time Data:
+            INDArray matrixT = computeTemporalFeatures(TPeriod);
+            INDArraySlicer slicerTime = new INDArraySlicer(matrixT);
+            matrixT = slicerTime.extractSubset(numberOfSkipHours, matrixT.size(0));
+            INDArray timeTrain = slicerTime.extractSubset(0, size_yTrain);
+            INDArrayIndex index = NDArrayIndex.interval(size_yTrain, matrixT.size(0));
+            INDArray timeTest = slicerTime.extractSubset(size_yTrain, y.size(0));
+
+            // PoI data
+            INDArray poiTrain = preparePOIData(size_yTrain, lenTest)[0];
+            INDArray poiTest = preparePOIData(size_yTrain, lenTest)[1];
+            return new Object[]{xTrain, timeTrain, poiTrain, yTrain, xTest, timeTest, poiTest, yTest, maxVal - minVal};
+
+        }
+
+
+        return new Object[]{xTrain, yTrain, xTest, yTest, maxVal - minVal};
+
     }
 }
 

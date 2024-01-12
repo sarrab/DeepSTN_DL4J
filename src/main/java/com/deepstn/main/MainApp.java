@@ -14,7 +14,6 @@ public class MainApp {
     private static final Logger log = LoggerFactory.getLogger(MainApp.class);
 
     private static ConfigReader configReader;
-    private static String datasetPath;
 
 
     public static void main(String[] args) {
@@ -24,10 +23,14 @@ public class MainApp {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        datasetPath = configReader.getString("datasetPath");
         Properties config = configReader.getProperties();
-        int lenTest = configReader.getInt("len_test");
+        boolean includePoitime = Boolean.parseBoolean(config.getProperty("is_pt"));
+
+
+        String datasetPath = configReader.getString("datasetPath");
+        String poiPath = includePoitime ? configReader.getString("poiDatasetPath") : "";
+        int daysTest = configReader.getInt("days_test");
+        int timeInterval = configReader.getInt("T");
         int lenCloseness = configReader.getInt("len_closeness");
         int lenPeriod = configReader.getInt("len_period");
         int lenTrend = configReader.getInt("len_trend");
@@ -35,8 +38,19 @@ public class MainApp {
         int T_period = configReader.getInt("T_period");
         int T_trend = configReader.getInt("T_trend");
 
+        //Total length of test data (days_test * t_intervals_day)
+        int lenTest = daysTest * timeInterval;
+        DataManager dataManager;
 
-        DataManager dataManager = new DataManager(datasetPath);
+        if (includePoitime) {
+            dataManager = new DataManager(datasetPath, poiPath);
+
+
+        } else {
+            dataManager = new DataManager(datasetPath);
+
+        }
+
         Object[] processedData = dataManager.processData(lenTest, lenCloseness, lenPeriod, lenTrend, T_closeness, T_period, T_trend);
         DSTNPlusTrainer trainer = new DSTNPlusTrainer(processedData, config);
         trainer.train();
