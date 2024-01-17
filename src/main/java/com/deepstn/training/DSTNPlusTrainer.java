@@ -93,7 +93,7 @@ public class DSTNPlusTrainer {
             INDArray xTrain = (INDArray) allData[0];
             INDArray yTrain = (INDArray) allData[1];
             INDArray xTest = (INDArray) allData[2];
-            INDArray yTest = (INDArray) allData[4];
+            INDArray yTest = (INDArray) allData[3];
 
             trainInput = new INDArray[]{xTrain};
             trainLabel = new INDArray[]{yTrain};
