@@ -7,12 +7,11 @@ import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.MultiDataSet;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.Iterator;
 import java.util.Properties;
 
@@ -92,9 +91,9 @@ public class DSTNPlusTrainer {
             testLabel = new INDArray[]{yTest};
         } else {
             INDArray xTrain = (INDArray) allData[0];
-            INDArray yTrain = (INDArray) allData[2];
-            INDArray xTest = (INDArray) allData[3];
-            INDArray yTest = (INDArray) allData[5];
+            INDArray yTrain = (INDArray) allData[1];
+            INDArray xTest = (INDArray) allData[2];
+            INDArray yTest = (INDArray) allData[4];
 
             trainInput = new INDArray[]{xTrain};
             trainLabel = new INDArray[]{yTrain};
@@ -116,7 +115,7 @@ public class DSTNPlusTrainer {
         ComputationGraph model = new DeepSTN().buildModel(height, width, channel, lenCloseness, lenPeriod, lenTrend, pre_F, conv_F, residualUnits,
                 plusFilters, pooling_rate, isIncludePoiTime, poiNum, numTimeFeatures, numPoiTimeFeatures, timeInterval, drop, lr, kernel_size_early_fusion, isPTmoreConv, seed);
 
-
+        Runtime runtime = Runtime.getRuntime();
         long startTime = System.currentTimeMillis();
 
 
@@ -124,7 +123,16 @@ public class DSTNPlusTrainer {
 
 
         for (int epoch = 0; epoch < epochs; epoch++) {
+            long epochStartTime = System.currentTimeMillis();
+            long usedMemory = runtime.totalMemory() - runtime.freeMemory();
+            log.info("Epoch " + (epoch + 1) + " Memory Used before training: " + usedMemory + " bytes");
             model.fit(trainDataSetIterator);
+            long epochEndTime = System.currentTimeMillis();
+
+            usedMemory = runtime.totalMemory() - runtime.freeMemory();
+            log.info("Epoch " + (epoch + 1) + " Memory Used after training: " + usedMemory + " bytes");
+            log.info("Training time at epoch " + (epoch + 1) + ": " + (epochEndTime - epochStartTime) + " ms");
+
 
             // Model saving and evaluation every n epochs or at the last epoch
 
@@ -146,6 +154,30 @@ public class DSTNPlusTrainer {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+
+                // Measure inference time
+                long inferenceStartTime = System.currentTimeMillis();
+                INDArray[] output = model.output(testInput);
+                long inferenceEndTime = System.currentTimeMillis();
+                for (int i = 0; i < output.length; i++) {
+                    INDArray indArray = output[i];
+                    String fileName = "output_" + i + "_at_epoch_" + epoch + ".csv";
+                    OutputStream outputStreamWriter = null;
+                    try {
+                        outputStreamWriter = new FileOutputStream(fileName);
+
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                    try {
+                        Nd4j.write(outputStreamWriter, indArray);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                }
+                log.info("Inference time at epoch " + (epoch + 1) + ": " + (inferenceEndTime - inferenceStartTime) + " ms");
+
             }
         }
 
