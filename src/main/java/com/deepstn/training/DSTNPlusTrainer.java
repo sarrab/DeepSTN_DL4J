@@ -107,8 +107,6 @@ public class DSTNPlusTrainer {
         Iterator<org.nd4j.linalg.dataset.api.MultiDataSet> trainIterator = trainDataSet.asList().iterator();
         Iterator<org.nd4j.linalg.dataset.api.MultiDataSet> testIterator = testDataSet.asList().iterator();
 
-        IteratorMultiDataSetIterator trainDataSetIterator = new IteratorMultiDataSetIterator(trainIterator, batchSize);
-        IteratorMultiDataSetIterator testDataSetIterator = new IteratorMultiDataSetIterator(testIterator, batchSize);
 
 
         log.info("****************** Building the model *********************");
@@ -123,6 +121,9 @@ public class DSTNPlusTrainer {
 
 
         for (int epoch = 0; epoch < epochs; epoch++) {
+            IteratorMultiDataSetIterator trainDataSetIterator = new IteratorMultiDataSetIterator(trainIterator, batchSize);
+            IteratorMultiDataSetIterator testDataSetIterator = new IteratorMultiDataSetIterator(testIterator, batchSize);
+
             long epochStartTime = System.currentTimeMillis();
             long usedMemory = runtime.totalMemory() - runtime.freeMemory();
             log.info("Epoch " + (epoch + 1) + " Memory Used before training: " + usedMemory + " bytes");
