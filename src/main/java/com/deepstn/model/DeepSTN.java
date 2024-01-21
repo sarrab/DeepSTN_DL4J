@@ -45,8 +45,7 @@ public class DeepSTN {
             graphBuilder.addLayer("pool_resPlus" + i, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.AVG)
                     .stride(rate, rate)
                     .kernelSize(rate, rate)
-
-
+                    .padding(0, 0)
                     .build(), lastLayerName);
             layerName = "pool_resPlus" + i;
         }
@@ -145,13 +144,19 @@ public class DeepSTN {
 
 
                 .addLayer("closeConv", new ConvolutionLayer.Builder(1, 1)
-                        .nIn(close_channel).nOut(pre_F)
+                        .nIn(close_channel)
+                        .nOut(pre_F)
+                        .convolutionMode(ConvolutionMode.Same)
                         .build(), cPreProcessor, "flow_input")
                 .addLayer("periodConv", new ConvolutionLayer.Builder(1, 1)
-                        .nIn(period_channel).nOut(pre_F)
+                        .nIn(period_channel)
+                        .convolutionMode(ConvolutionMode.Same)
+                        .nOut(pre_F)
                         .build(), pPreProcessor, "flow_input")
                 .addLayer("trendConv", new ConvolutionLayer.Builder(1, 1)
-                        .nIn(trend_channel).nOut(pre_F)
+                        .nIn(trend_channel)
+                        .convolutionMode(ConvolutionMode.Same)
+                        .nOut(pre_F)
                         .build(), tPreProcessor, "flow_input");
 
         String lastLayer;
@@ -181,7 +186,7 @@ public class DeepSTN {
         graphBuilder.addLayer("dropout", new DropoutLayer(drop), "bn");
         graphBuilder.addLayer("conv2d", new ConvolutionLayer.Builder()//
                         .kernelSize(1, 1)
-                        .padding(0, 0)
+                        .convolutionMode(ConvolutionMode.Same)
                         .nIn(conv_F)
                         .nOut(channel)//
                         .build(), "dropout")

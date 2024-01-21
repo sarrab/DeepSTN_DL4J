@@ -104,8 +104,6 @@ public class DSTNPlusTrainer {
         MultiDataSet trainDataSet = new MultiDataSet(trainInput, trainLabel);
         MultiDataSet testDataSet = new MultiDataSet(testInput, testLabel);
 
-        Iterator<org.nd4j.linalg.dataset.api.MultiDataSet> trainIterator = trainDataSet.asList().iterator();
-        Iterator<org.nd4j.linalg.dataset.api.MultiDataSet> testIterator = testDataSet.asList().iterator();
 
 
 
@@ -121,23 +119,28 @@ public class DSTNPlusTrainer {
 
 
         for (int epoch = 0; epoch < epochs; epoch++) {
+            Iterator<org.nd4j.linalg.dataset.api.MultiDataSet> trainIterator = trainDataSet.asList().iterator();
+            Iterator<org.nd4j.linalg.dataset.api.MultiDataSet> testIterator = testDataSet.asList().iterator();
+
             IteratorMultiDataSetIterator trainDataSetIterator = new IteratorMultiDataSetIterator(trainIterator, batchSize);
             IteratorMultiDataSetIterator testDataSetIterator = new IteratorMultiDataSetIterator(testIterator, batchSize);
 
             long epochStartTime = System.currentTimeMillis();
-            long usedMemory = runtime.totalMemory() - runtime.freeMemory();
-            log.info("Epoch " + (epoch + 1) + " Memory Used before training: " + usedMemory + " bytes");
+            long beforeUsedMemory = runtime.totalMemory() - runtime.freeMemory();
+
             model.fit(trainDataSetIterator);
             long epochEndTime = System.currentTimeMillis();
 
-            usedMemory = runtime.totalMemory() - runtime.freeMemory();
-            log.info("Epoch " + (epoch + 1) + " Memory Used after training: " + usedMemory + " bytes");
-            log.info("Training time at epoch " + (epoch + 1) + ": " + (epochEndTime - epochStartTime) + " ms");
+            long afterUsedMemory = runtime.totalMemory() - runtime.freeMemory();
 
 
             // Model saving and evaluation every n epochs or at the last epoch
 
             if ((epoch + 1) % saveModelInterval == 0 || epoch == epochs - 1) {
+                log.info("Epoch " + (epoch + 1) + " Memory Used before training: " + beforeUsedMemory + " bytes");
+                log.info("Epoch " + (epoch + 1) + " Memory Used after training: " + afterUsedMemory + " bytes");
+                log.info("Training time at epoch " + (epoch + 1) + ": " + (epochEndTime - epochStartTime) + " ms");
+
                 String modelFilename = "model_at_epoch_" + (epoch + 1) + ".zip";
                 try {
                     ModelSerializer.writeModel(model, modelFilename, true);
